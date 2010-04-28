@@ -1,0 +1,9 @@
+[Gedit Plugin]
+Loader=python
+Module=countsearchresults
+IAge=2
+Name=Count Search Results
+Description=Allows counting of search results in text
+Authors=Matt Mueller <matt@any-where.de>
+Copyright=Copyright 2010 Matt Mueller <matt@any-where.de>
+Website=http://www.any-where.de

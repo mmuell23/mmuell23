@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<glade-interface>
+  <!-- interface-requires gtk+ 2.16 -->
+  <!-- interface-naming-policy project-wide -->
+  <widget class="GtkWindow" id="MeldLauncherWindow">
+    <property name="modal">True</property>
+    <property name="default_width">400</property>
+    <child>
+      <widget class="GtkVBox" id="topbox">
+        <property name="visible">True</property>
+        <child>
+          <widget class="GtkHBox" id="labelbox">
+            <property name="visible">True</property>
+            <child>
+              <placeholder/>
+            </child>
+          </widget>
+          <packing>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkVBox" id="buttonlistbox">
+            <property name="visible">True</property>
+            <child>
+              <widget class="GtkVButtonBox" id="buttonbox">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </widget>
+              <packing>
+                <property name="position">0</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </widget>
+    </child>
+  </widget>
+</glade-interface>

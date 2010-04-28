@@ -1,0 +1,9 @@
+[Gedit Plugin]
+Loader=python
+Module=meldlauncher
+IAge=2
+Name=Launch Meld to compare Files
+Description=Opens Meld to compare 2 files
+Authors=Matt Mueller <matt@any-where.de>
+Copyright=Copyright 2010 Matt Mueller <matt@any-where.de>
+Website=http://www.any-where.de
