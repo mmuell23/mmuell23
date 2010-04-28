@@ -1,0 +1,5 @@
+To use this plug-in ...
+... install meld. On Ubuntu do this: sudo apt-get install meld
+... copy all files to ~/.gnome2/gedit/plugins
+... activate the plug-in in gedit settings
+... open 2 or more files and hit the new compare button in the toolbar.
