@@ -58,11 +58,11 @@ class MeldLauncherWindowHelper:
 		current_doc = self._window.get_active_document()
 		app = gedit.app_get_default() 
 
-		#kein oder nur 1 Dokument? return
+		#only one document in gedit? stop this
 		if current_doc == None or len(app.get_documents()) == 1:
 			return
 		
-		#nur 2 dokumente? fang gleich an und spar dir den fensterkram...
+		#only 2 documents at all? start comparing straight away
 		if (len(app.get_documents()) == 2):
 			self._path_1 = app.get_documents()[0].get_uri_for_display()
 			self._path_2 = app.get_documents()[1].get_short_name_for_display()
@@ -71,7 +71,7 @@ class MeldLauncherWindowHelper:
 
 		self._path_1 = current_doc.get_uri_for_display()
 
-		#fenster zur auswahl bauen
+		#build selection screen
 		self._snapopen_glade = gtk.glade.XML( os.path.dirname( __file__ ) + "/meldlauncher.glade" )
 		self._snapopen_window = self._snapopen_glade.get_widget( "MeldLauncherWindow" )	
 
@@ -93,7 +93,7 @@ class MeldLauncherWindowHelper:
 		filelist_group = self._snapopen_glade.get_widget("buttonbox")
 		for doc in gedit.app_get_default().get_documents():
 			if current_doc.get_short_name_for_display() != doc.get_short_name_for_display():
-				button = gtk.Button(doc.get_short_name_for_display())
+				button = gtk.Button(self.get_filename(doc.get_uri_for_display()))
 				button.connect("clicked", self.button_callback)
 				
 				filelist_group.pack_start(button, True, True, 0)
@@ -127,6 +127,9 @@ class MeldLauncherWindowHelper:
 	def close_window(self, window):
 		window.hide()
 
+	def get_filename(self, path):
+		return path.split("/")[-1]
+		
 class MeldLauncher(gedit.Plugin):
 
 	def __init__(self):
