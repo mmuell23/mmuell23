@@ -1,0 +1,6 @@
+Sorts a document alphabetically.
+
+To use this plug-in ...
+... copy all files to ~/.gnome2/gedit/plugins
+... activate the plug-in in gedit settings
+... sort current document by hitting the new button in the tool bar.

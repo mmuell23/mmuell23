@@ -1,0 +1,9 @@
+[Gedit Plugin]
+Loader=python
+Module=sortdocument
+IAge=2
+Name=Sort document
+Description=Sorts all lines in the document
+Authors=Matt Mueller <matt@any-where.de>
+Copyright=Copyright 2010 Matt Mueller <matt@any-where.de>
+Website=http://www.any-where.de
