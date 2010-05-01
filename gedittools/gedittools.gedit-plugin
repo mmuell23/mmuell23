@@ -1,0 +1,9 @@
+[Gedit Plugin]
+Loader=python
+Module=gedittools
+IAge=2
+Name=Several useful tools for gedit
+Description=XML folding, XML highlighting, search expression highlighting
+Authors=Matt Mueller <matt@any-where.de>
+Copyright=Copyright 2010 Matt Mueller <matt@any-where.de>
+Website=http://www.any-where.de
