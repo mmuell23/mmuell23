@@ -108,6 +108,17 @@ class GeditToolsWindowHelper:
 				selected_text = self.format_starttag(selected_text)
 				#s.set_line_offset(s.get_line_offset() + len(selected_text))
 				closing_tag_iter = self.move_to_end_tag(s.copy(), selected_text)
+
+				#was this an inline command?
+				if self._is_inline:
+					closing_tag_iter = s.copy()
+					closing_tag_iter.forward_to_line_end()
+					line = self._current_doc.get_text(s, closing_tag_iter)
+					offset = string.find(line, "/>") + s.get_line_offset() +2
+					closing_tag_iter.set_line_offset(offset)
+					#self.message_dialog(None, 0, line + ": " + str(offset))
+					#self.message_dialog(None, 0, "Inline Command: " + str(s.get_line_offset()) + "/" + str(closing_tag_iter.get_line_offset()))
+				
 				if closing_tag_iter:
 					#self.message_dialog(None,0,selected_text)
 					#self.message_dialog(None, 0, str(closing_tag_iter.get_line()))
@@ -144,11 +155,13 @@ class GeditToolsWindowHelper:
 
 		has_next_line = True
 		is_first_line = True
-
+		self._is_inline = False #Flag for inline commands
 		
 		while(has_next_line):
 			s = start_iter
 			e = start_iter.copy()
+
+			#not on first line? set index to beginning
 			if not is_first_line:
 				s.set_line_offset(0)
 			is_first_line = False
@@ -164,6 +177,22 @@ class GeditToolsWindowHelper:
 			scan_current_line = True
 
 			while scan_current_line:
+				#special case: inline tags like <example test="blahblah"/>
+				#detects inline tags in check of FIRST LINE only
+				closed_tag = string.find(line_content, "/>")
+				#found "/>" and no other "<" in between? Then this is an inline command
+				if closed_tag > 0 and string.find(line_content[1:closed_tag], "<") == -1 and string.find(line_content[0:closed_tag], start_tag) >= 0:
+					#nothing else found so far? begins with inline command. so, presume, this is the one we want to mark.
+					if self._tag_lib[self._current_doc][start_tag] == 0:
+						#self.message_dialog(None, 0, "Inline Command: " + str(s.get_line_offset()))
+						self._is_inline = True
+						return s
+					else:
+						self.message_dialog(None, 0, "Line: " + line_content)
+						s.set_line_offset(closed_tag)
+						line_content = self._current_doc.get_text(s,e)
+					
+			
 				#oeffnet sich noch mal der starttag?
 				#wenn ja, passiert das vor dem endtag, wenn einer da ist?
 				pos_start_tag = string.find(line_content, start_tag)
