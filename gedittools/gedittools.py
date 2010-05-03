@@ -96,8 +96,9 @@ class GeditToolsWindowHelper:
 			#first of all: remove all other tags
 			for triple in self._highlighted_pairs[self._current_doc]:
 				self._current_doc.remove_tag(triple[0], triple[1], triple[2])
+
 			self._highlighted_pairs[self._current_doc] = []		
-						
+
 			self.highlight_xml(selection[0], selection[1], 0)
 			
 			#now, show all tags
@@ -107,7 +108,7 @@ class GeditToolsWindowHelper:
 				for remove_tag in self._tag_lib[self._current_doc]:
 					self._current_doc.remove_tag(remove_tag, triple[1], triple[2])
 				self._current_doc.apply_tag(triple[0], triple[1], triple[2])				
-
+			
 	def highlight_xml(self, s, e, level):
 		#self.message_dialog(None, 0, self._current_doc.get_text(s,e))
 		is_xml = self.is_xml_tag(s,e)
@@ -127,7 +128,7 @@ class GeditToolsWindowHelper:
 				closing_tag_iter.set_line_offset(offset)
 			
 			if closing_tag_iter:
-				self._current_doc.select_range(s,s)
+				#self._current_doc.select_range(s,s)
 				self._highlighted_pairs[self._current_doc].append([self._tag_lib[self._current_doc][level % len(self._tag_lib[self._current_doc])], s, closing_tag_iter])
 
 	#format the starttag: to ignore all attributes, kick out the ">" if present
@@ -179,7 +180,7 @@ class GeditToolsWindowHelper:
 			line_content = self._current_doc.get_text(s,e)
 			scan_current_line = True
 
-			another_tag = re.search("\<[a-z][a-z]*", line_content)
+			another_tag = re.search("\<[a-zA-Z_]+", line_content)
 			if another_tag and another_tag.group(0) != start_tag: #hier noch beruecksichtigen, wenn gleiche tags verschachtelt sind. sollte ueber die anzahl gefundener tags gehen
 				tag = another_tag.group(0)
 				pos_another_tag = string.find(line_content, tag) 
@@ -187,7 +188,6 @@ class GeditToolsWindowHelper:
 				#self.message_dialog(None,0,"Tag gefunden: " + tag + " | Start Tag ist: " + start_tag)
 				s1 = s.copy()
 				e1 = s1.copy()
-				
 				s1.set_line_offset(pos_another_tag)
 				e1.set_line_offset(s1.get_line_offset() + len(tag))
 				#self.message_dialog(None,0,"Setze auf:" + self._current_doc.get_text(s1, e1))
