@@ -32,7 +32,7 @@ class GeditToolsWindowHelper:
 		self._tag_list = {} #all applied tags by document 
 		self._tag_lib = {} #all tags to be assigned
 		self._active_tag_switch = 0
-		
+
 	def deactivate(self):
 		self._remove_menu()
 		self._window = None
@@ -53,28 +53,30 @@ class GeditToolsWindowHelper:
 		self._action_group.set_sensitive(self._window.get_active_document() != None)
 		self._current_doc = self._window.get_active_document()
 
+		if self._current_doc and not self._tag_lib.has_key(self._current_doc):
+			self._tag_lib[self._current_doc] = []
+			self._tag_lib[self._current_doc].append(self._current_doc.create_tag('active_0', foreground="#000000", background="#CCDDFF"))
+			self._tag_lib[self._current_doc].append(self._current_doc.create_tag('active_1', foreground="#000000", background="#FFDDCC"))
+			self._tag_lib[self._current_doc].append(self._current_doc.create_tag('active_2', foreground="#000000", background="#CCFFDD"))
+			self._tag_lib[self._current_doc].append(self._current_doc.create_tag('active_3', foreground="#000000", background="#DDFFCC"))
+			self._tag_lib[self._current_doc].append(self._current_doc.create_tag('active_4', foreground="#000000", background="#DDCCFF"))
+
 		if not self._tag_list.has_key(self._current_doc):
 			self._tag_list[self._current_doc] = {}
-		
+
+		#initialize list for highlighted tags
 		if not self._highlighted_pairs.has_key(self._current_doc):
 			self._highlighted_pairs[self._current_doc] = []
 
 		#create tags
 		if self._current_doc:
-
 			self._tag_folded = self._current_doc.get_tag_table().lookup('folded')
 			if self._tag_folded == None:
 				self._tag_folded = self._current_doc.create_tag('folded', foreground="#000000", background="#FBEC5D")		
-
-			self._tag_active_0 = self._current_doc.get_tag_table().lookup('active_0')
-			self._tag_active_1 = self._current_doc.get_tag_table().lookup('active_1')
-			if self._tag_active_0 == None:
-				self._tag_active_0 = self._current_doc.create_tag('active_0', foreground="#000000", background="#CCDDFF")
-			if self._tag_active_1 == None:
-				self._tag_active_1 = self._current_doc.create_tag('active_1', foreground="#000000", background="#FFDDCC")
-
+				
 		self.timer = glib.timeout_add(500, self.general_timer)
 
+	#helper to show a message dialog
 	def message_dialog(self, par, typ, msg):
 		d = gtk.MessageDialog(par, gtk.DIALOG_MODAL, typ, gtk.BUTTONS_OK, msg)
 		d.set_property('use-markup', False)
@@ -84,39 +86,47 @@ class GeditToolsWindowHelper:
 	def close_window(self, window):
 		window.hide()
 
+	#general timer. runs always
 	def general_timer(self):
+		xml_highlighted = False
 		if self._current_doc:
-			self.start_highlighting()
-			#self.highlight_selection()
+			xml_highlighted = self.start_highlighting()
+
+		if not xml_highlighted:
+			self.highlight_selection()
 
 	def start_highlighting(self):
 		selection = self._current_doc.get_selection_bounds()
+		was_xml = False
 		if selection:
-			self.highlight_xml(selection[0], selection[1])
-		#iterate all tags and apply them to current document
+			#first of all: remove all other tags
+			for triple in self._highlighted_pairs[self._current_doc]:
+				self._current_doc.remove_tag(triple[0], triple[1], triple[2])
 
-		#self.message_dialog(None, 0, str(len(self._highlighted_pairs[self._current_doc])))
-		self._highlighted_pairs[self._current_doc].reverse()
+			self._highlighted_pairs[self._current_doc] = []		
 
-		#first of all: remove all other tags
-		for triple in self._highlighted_pairs[self._current_doc]:
-			self._current_doc.remove_tag(triple[0], triple[1], triple[2])
-
-		#iterate all new iters and apply tags	
-		for triple in self._highlighted_pairs[self._current_doc]:
-			self._current_doc.apply_tag(triple[0], triple[1], triple[2])
+			self.highlight_xml(selection[0], selection[1], 0)
 			
-	def highlight_xml(self, s, e):
+			#now, show all tags
+			self._highlighted_pairs[self._current_doc].reverse()
+			
+			for triple in self._highlighted_pairs[self._current_doc]:
+				#self.message_dialog(None, 0, "Highlighte Text:" + self._current_doc.get_text(triple[1], triple[2]))
+				for remove_tag in self._tag_lib[self._current_doc]:
+					self._current_doc.remove_tag(remove_tag, triple[1], triple[2])
+				self._current_doc.apply_tag(triple[0], triple[1], triple[2])				
+				was_xml = True
+		return was_xml
+				
+	def highlight_xml(self, s, e, level):
+		#self.message_dialog(None, 0, self._current_doc.get_text(s,e))
 		is_xml = self.is_xml_tag(s,e)
-
-		self._highlighted_pairs[self._current_doc] = []
 
 		if is_xml:
 			selected_text = self._current_doc.get_text(s, e)
 			selected_text = self.format_starttag(selected_text)
 			#s.set_line_offset(s.get_line_offset() + len(selected_text))
-			self.message_dialog(None, 0, "Tag:" + selected_text)
-			closing_tag_iter = self.move_to_end_tag(s.copy(), selected_text)
+			closing_tag_iter = self.move_to_end_tag(s.copy(), selected_text, level)
 
 			#was this an inline command?
 			if self._is_inline:
@@ -127,13 +137,9 @@ class GeditToolsWindowHelper:
 				closing_tag_iter.set_line_offset(offset)
 			
 			if closing_tag_iter:
-				if self._active_tag_switch == 1:
-					self._active_tag_switch = 0
-					self._highlighted_pairs[self._current_doc].append([self._tag_active_1, s, closing_tag_iter])
-				else:
-					self._highlighted_pairs[self._current_doc].append([self._tag_active_0, s, closing_tag_iter])
-					self._active_tag_switch = 1
-				self._current_doc.select_range(s,s)
+				#self._current_doc.select_range(s,s)
+				self._highlighted_pairs[self._current_doc].append([self._tag_lib[self._current_doc][level % len(self._tag_lib[self._current_doc])], s, closing_tag_iter])
+
 	#format the starttag: to ignore all attributes, kick out the ">" if present
 	def format_starttag(self, tag):
 		if tag[-1:] == ">":
@@ -147,22 +153,21 @@ class GeditToolsWindowHelper:
 		selected_text = self._current_doc.get_text(s, e)
 		is_xml = (selected_text.strip()[0] == "<")
 		if is_xml:
-			self._end_tag = "</" + selected_text[1:-1] + ">"
 			return True	
 
 		#only tag keyword selected	
 		if s.get_line_index() > 0:
 			s.set_line_index(s.get_line_index() - 1)
 		selected_text = self._current_doc.get_text(s, e)
-		self._end_tag = "</" + selected_text.strip()[1:] + ">"
 		return (selected_text.strip()[0] == "<")
 
 	def get_end_tag(self, start_tag):
 		return "</" + start_tag[1:] + ">"
 					
-	def move_to_end_tag(self, start_iter, start_tag):
+	def move_to_end_tag(self, start_iter, start_tag, level):
+		end_tag = "</" + start_tag[1:] + ">"
 		self._tag_list[self._current_doc][start_tag] = 0
-		self._tag_list[self._current_doc][self.get_end_tag(start_tag)] = 0
+		self._tag_list[self._current_doc][end_tag] = 0
 
 		has_next_line = True
 		is_first_line = True
@@ -187,29 +192,19 @@ class GeditToolsWindowHelper:
 			line_content = self._current_doc.get_text(s,e)
 			scan_current_line = True
 
-			#another xml tag? call that function again
-			another_tag = re.search('\<[a-z][a-z]*', line_content)
-			self.message_dialog(None, 0, "Start_tag: " + start_tag)
-			if another_tag and another_tag.group(0) != start_tag:
-
-				pos_another_tag = string.find(line_content, another_tag.group(0))
-
-				self.message_dialog(None, 0, "Tag: " + another_tag.group(0) + "; Pos: " + str(pos_another_tag))
-
+			another_tag = re.search("\<[a-zA-Z0-9_]+", line_content)
+			if another_tag and another_tag.group(0) != start_tag: #hier noch beruecksichtigen, wenn gleiche tags verschachtelt sind. sollte ueber die anzahl gefundener tags gehen
+				tag = another_tag.group(0)
+				pos_another_tag = string.find(line_content, tag) 
+				
+				#self.message_dialog(None,0,"Tag gefunden: " + tag + " | Start Tag ist: " + start_tag)
 				s1 = s.copy()
-				s1.set_line_offset(s1.get_line_offset() + pos_another_tag + 1)
-
-				e1 = s.copy()
-				e1.set_line_offset(e1.get_line_offset() + len(another_tag.group(0)) + 1)
-
-				self.message_dialog(None, 0, "Tag ausgelesen: " + self._current_doc.get_text(s1, e1))
+				e1 = s1.copy()
+				s1.set_line_offset(pos_another_tag)
+				e1.set_line_offset(s1.get_line_offset() + len(tag))
+				#self.message_dialog(None,0,"Setze auf:" + self._current_doc.get_text(s1, e1))
+				self.highlight_xml(s1, e1, level + 1)
 				
-				self._tag_list[self._current_doc][another_tag.group(0)] = 0
-				self._tag_list[self._current_doc]["</" + another_tag.group(0)[1:] + ">"] = 0
-				
-				self.highlight_xml(s1, e.copy())
-				#self.message_dialog(None, 0, "</" + another_tag.group(0)[1:] + ">")
-
 			while scan_current_line:
 				#special case: inline tags like <example test="blahblah"/>
 				#detects inline tags in check of FIRST LINE only
@@ -227,7 +222,7 @@ class GeditToolsWindowHelper:
 				#oeffnet sich noch mal der starttag?
 				#wenn ja, passiert das vor dem endtag, wenn einer da ist?
 				pos_start_tag = string.find(line_content, start_tag)
-				pos_end_tag   = string.find(line_content, self.get_end_tag(start_tag))
+				pos_end_tag   = string.find(line_content, end_tag)
 
 				found_start_tag = (pos_start_tag >= 0)
 				found_end_tag = (pos_end_tag >= 0)
@@ -237,15 +232,15 @@ class GeditToolsWindowHelper:
 					s.set_line_offset(s.get_line_offset() + pos_start_tag + len(start_tag))
 					line_content = self._current_doc.get_text(s,e)
 				elif (found_end_tag and not found_start_tag) or (found_start_tag and found_end_tag and pos_end_tag < pos_start_tag):
-					self._tag_list[self._current_doc][self.get_end_tag(start_tag)] = self._tag_list[self._current_doc][self.get_end_tag(start_tag)] + 1
-					s.set_line_offset(s.get_line_offset() + pos_end_tag + len(self.get_end_tag(start_tag)))
-					if self._tag_list[self._current_doc][self.get_end_tag(start_tag)] == self._tag_list[self._current_doc][start_tag]:
+					self._tag_list[self._current_doc][end_tag] = self._tag_list[self._current_doc][end_tag] + 1
+					s.set_line_offset(s.get_line_offset() + pos_end_tag + len(end_tag))
+					if self._tag_list[self._current_doc][end_tag] == self._tag_list[self._current_doc][start_tag]:
 						scan_current_line = False
 					line_content = self._current_doc.get_text(s,e)
 				else:
 					scan_current_line = False
 				
-				if self._tag_list[self._current_doc][self.get_end_tag(start_tag)] == self._tag_list[self._current_doc][start_tag]:
+				if self._tag_list[self._current_doc][end_tag] == self._tag_list[self._current_doc][start_tag]:
 					return s
 
 			has_next_line = start_iter.forward_line()
