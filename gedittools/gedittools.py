@@ -76,6 +76,7 @@ class GeditToolsWindowHelper:
 				
 		self.timer = glib.timeout_add(500, self.general_timer)
 
+	#helper to show a message dialog
 	def message_dialog(self, par, typ, msg):
 		d = gtk.MessageDialog(par, gtk.DIALOG_MODAL, typ, gtk.BUTTONS_OK, msg)
 		d.set_property('use-markup', False)
@@ -85,13 +86,18 @@ class GeditToolsWindowHelper:
 	def close_window(self, window):
 		window.hide()
 
+	#general timer. runs always
 	def general_timer(self):
+		xml_highlighted = False
 		if self._current_doc:
-			self.start_highlighting()
-			#self.highlight_selection()
+			xml_highlighted = self.start_highlighting()
+
+		if not xml_highlighted:
+			self.highlight_selection()
 
 	def start_highlighting(self):
 		selection = self._current_doc.get_selection_bounds()
+		was_xml = False
 		if selection:
 			#first of all: remove all other tags
 			for triple in self._highlighted_pairs[self._current_doc]:
@@ -103,12 +109,15 @@ class GeditToolsWindowHelper:
 			
 			#now, show all tags
 			self._highlighted_pairs[self._current_doc].reverse()
+			
 			for triple in self._highlighted_pairs[self._current_doc]:
 				#self.message_dialog(None, 0, "Highlighte Text:" + self._current_doc.get_text(triple[1], triple[2]))
 				for remove_tag in self._tag_lib[self._current_doc]:
 					self._current_doc.remove_tag(remove_tag, triple[1], triple[2])
 				self._current_doc.apply_tag(triple[0], triple[1], triple[2])				
-			
+				was_xml = True
+		return was_xml
+				
 	def highlight_xml(self, s, e, level):
 		#self.message_dialog(None, 0, self._current_doc.get_text(s,e))
 		is_xml = self.is_xml_tag(s,e)
