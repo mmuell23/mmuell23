@@ -76,6 +76,9 @@ class GeditToolsWindowHelper:
 				
 		self.timer = glib.timeout_add(500, self.general_timer)
 
+	def alert(self, message):
+		self.message_dialog(None, 0, message)
+		
 	#helper to show a message dialog
 	def message_dialog(self, par, typ, msg):
 		d = gtk.MessageDialog(par, gtk.DIALOG_MODAL, typ, gtk.BUTTONS_OK, msg)
@@ -104,14 +107,13 @@ class GeditToolsWindowHelper:
 				self._current_doc.remove_tag(triple[0], triple[1], triple[2])
 
 			self._highlighted_pairs[self._current_doc] = []		
-
 			self.highlight_xml(selection[0], selection[1], 0)
 			
 			#now, show all tags
 			self._highlighted_pairs[self._current_doc].reverse()
 			
 			for triple in self._highlighted_pairs[self._current_doc]:
-				#self.message_dialog(None, 0, "Highlighte Text:" + self._current_doc.get_text(triple[1], triple[2]))
+				#self.alert("Highlighte Text:" + self._current_doc.get_text(triple[1], triple[2]))
 				for remove_tag in self._tag_lib[self._current_doc]:
 					self._current_doc.remove_tag(remove_tag, triple[1], triple[2])
 				self._current_doc.apply_tag(triple[0], triple[1], triple[2])				
@@ -119,7 +121,7 @@ class GeditToolsWindowHelper:
 		return was_xml
 				
 	def highlight_xml(self, s, e, level):
-		#self.message_dialog(None, 0, self._current_doc.get_text(s,e))
+		#self.alert(self._current_doc.get_text(s,e))
 		is_xml = self.is_xml_tag(s,e)
 
 		if is_xml:
@@ -128,17 +130,99 @@ class GeditToolsWindowHelper:
 			#s.set_line_offset(s.get_line_offset() + len(selected_text))
 			closing_tag_iter = self.move_to_end_tag(s.copy(), selected_text, level)
 
-			#was this an inline command?
-			if self._is_inline:
-				closing_tag_iter = s.copy()
-				closing_tag_iter.forward_to_line_end()
-				line = self._current_doc.get_text(s, closing_tag_iter)
-				offset = string.find(line, "/>") + s.get_line_offset() +2
-				closing_tag_iter.set_line_offset(offset)
-			
 			if closing_tag_iter:
-				#self._current_doc.select_range(s,s)
+				#self.alert(selected_text + " auf Level " + str(level))
 				self._highlighted_pairs[self._current_doc].append([self._tag_lib[self._current_doc][level % len(self._tag_lib[self._current_doc])], s, closing_tag_iter])
+
+	def move_to_end_tag(self, start_iter, start_tag, level):
+		end_tag = "</" + start_tag[1:] + ">"
+		self._tag_list[self._current_doc][start_tag] = 0
+		self._tag_list[self._current_doc][end_tag] = 0
+
+		has_next_line = True
+		is_first_line = True
+		self._is_inline = False #Flag for inline commands
+		
+		while(has_next_line):
+			s = start_iter
+			e = start_iter.copy()
+
+			#not on first line? set index to beginning
+			if not is_first_line:
+				s.set_line_offset(0)
+			is_first_line = False
+
+			#move to end of line
+			e.forward_to_line_end()
+
+			if e.get_line() > s.get_line():
+				s.set_line(e.get_line())
+				s.set_line_offset(0)
+			
+			line_content = s.get_text(e)
+			line_content = self._current_doc.get_text(s,e)
+			scan_current_line = True
+			reg_ex = "<[a-zA-Z0-9_]+"
+			#self.alert(reg_ex)
+
+			found_tags = re.findall(reg_ex, line_content)
+			another_tag = None
+			for found_tag in found_tags:
+				if found_tag != start_tag:
+					another_tag = found_tag
+					break
+			
+			#another_tag = re.search(reg_ex, line_content)
+			if another_tag: #hier noch beruecksichtigen, wenn gleiche tags verschachtelt sind. sollte ueber die anzahl gefundener tags gehen
+				pos_another_tag = string.find(line_content, another_tag) 
+				s1 = s.copy()
+				e1 = s1.copy()
+				s1.set_offset(s1.get_offset() + pos_another_tag)
+				e1.set_offset(s1.get_offset() + len(another_tag))
+				self.highlight_xml(s1, e1, level + 1)
+				
+			while scan_current_line:
+				#special case: inline tags like <example test="blahblah"/>
+				pos_closed_tag = string.find(line_content, "/>")
+				#found "/>" and no other "<" in between? Then this is an inline command
+				if pos_closed_tag > 0 and string.find(line_content[1:pos_closed_tag], "<") == -1 and string.find(line_content[0:pos_closed_tag], start_tag) >= 0:
+					#nothing else found so far? begins with inline command. so, presume, this is the one we want to mark.
+					if self._tag_list[self._current_doc][start_tag] == 0:
+						s1 = s.copy() #position to conintue scanning from; also position behind "/>"
+						s1.set_offset(s.get_offset() + pos_closed_tag + 2)
+						self._highlighted_pairs[self._current_doc].append([self._tag_lib[self._current_doc][level % len(self._tag_lib[self._current_doc])], s, s1])
+						return s1
+					else:
+						s.set_offset(s.get_offset() + pos_closed_tag + 2)
+						line_content = self._current_doc.get_text(s,e)
+			
+				#oeffnet sich noch mal der starttag?
+				#wenn ja, passiert das vor dem endtag, wenn einer da ist?
+				pos_start_tag = string.find(line_content, start_tag)
+				pos_end_tag   = string.find(line_content, end_tag)
+
+				found_start_tag = (pos_start_tag >= 0)
+				found_end_tag = (pos_end_tag >= 0)
+
+				#starttag, kein endtag oder starttag und endtag, aber starttag vor endtag
+				if (found_start_tag and not found_end_tag) or (found_start_tag and found_end_tag and pos_start_tag < pos_end_tag):
+					self._tag_list[self._current_doc][start_tag] = self._tag_list[self._current_doc][start_tag] + 1
+					s.set_offset(s.get_offset() + pos_start_tag + len(start_tag))
+					line_content = self._current_doc.get_text(s,e)
+				elif (found_end_tag and not found_start_tag) or (found_start_tag and found_end_tag and pos_end_tag < pos_start_tag):
+					self._tag_list[self._current_doc][end_tag] = self._tag_list[self._current_doc][end_tag] + 1
+					s.set_offset(s.get_offset() + pos_end_tag + len(end_tag))
+					if self._tag_list[self._current_doc][end_tag] == self._tag_list[self._current_doc][start_tag]:
+						scan_current_line = False
+					line_content = self._current_doc.get_text(s,e)
+				else:
+					scan_current_line = False
+				
+				if self._tag_list[self._current_doc][end_tag] == self._tag_list[self._current_doc][start_tag]:
+					return s
+
+			has_next_line = start_iter.forward_line()
+		return None
 
 	#format the starttag: to ignore all attributes, kick out the ">" if present
 	def format_starttag(self, tag):
@@ -163,88 +247,6 @@ class GeditToolsWindowHelper:
 
 	def get_end_tag(self, start_tag):
 		return "</" + start_tag[1:] + ">"
-					
-	def move_to_end_tag(self, start_iter, start_tag, level):
-		end_tag = "</" + start_tag[1:] + ">"
-		self._tag_list[self._current_doc][start_tag] = 0
-		self._tag_list[self._current_doc][end_tag] = 0
-
-		has_next_line = True
-		is_first_line = True
-		self._is_inline = False #Flag for inline commands
-		
-		while(has_next_line):
-			s = start_iter
-			e = start_iter.copy()
-
-			#not on first line? set index to beginning
-			if not is_first_line:
-				s.set_line_offset(0)
-			is_first_line = False
-			
-			e.forward_to_line_end()
-
-			if e.get_line() > s.get_line():
-				s.set_line(e.get_line())
-				s.set_line_offset(0)
-			
-			line_content = s.get_text(e)
-			line_content = self._current_doc.get_text(s,e)
-			scan_current_line = True
-
-			another_tag = re.search("\<[a-zA-Z0-9_]+", line_content)
-			if another_tag and another_tag.group(0) != start_tag: #hier noch beruecksichtigen, wenn gleiche tags verschachtelt sind. sollte ueber die anzahl gefundener tags gehen
-				tag = another_tag.group(0)
-				pos_another_tag = string.find(line_content, tag) 
-				
-				#self.message_dialog(None,0,"Tag gefunden: " + tag + " | Start Tag ist: " + start_tag)
-				s1 = s.copy()
-				e1 = s1.copy()
-				s1.set_line_offset(pos_another_tag)
-				e1.set_line_offset(s1.get_line_offset() + len(tag))
-				#self.message_dialog(None,0,"Setze auf:" + self._current_doc.get_text(s1, e1))
-				self.highlight_xml(s1, e1, level + 1)
-				
-			while scan_current_line:
-				#special case: inline tags like <example test="blahblah"/>
-				#detects inline tags in check of FIRST LINE only
-				closed_tag = string.find(line_content, "/>")
-				#found "/>" and no other "<" in between? Then this is an inline command
-				if closed_tag > 0 and string.find(line_content[1:closed_tag], "<") == -1 and string.find(line_content[0:closed_tag], start_tag) >= 0:
-					#nothing else found so far? begins with inline command. so, presume, this is the one we want to mark.
-					if self._tag_list[self._current_doc][start_tag] == 0:
-						self._is_inline = True
-						return s
-					else:
-						s.set_line_offset(closed_tag)
-						line_content = self._current_doc.get_text(s,e)
-			
-				#oeffnet sich noch mal der starttag?
-				#wenn ja, passiert das vor dem endtag, wenn einer da ist?
-				pos_start_tag = string.find(line_content, start_tag)
-				pos_end_tag   = string.find(line_content, end_tag)
-
-				found_start_tag = (pos_start_tag >= 0)
-				found_end_tag = (pos_end_tag >= 0)
-
-				if (found_start_tag and not found_end_tag) or (found_start_tag and found_end_tag and pos_start_tag < pos_end_tag):
-					self._tag_list[self._current_doc][start_tag] = self._tag_list[self._current_doc][start_tag] + 1
-					s.set_line_offset(s.get_line_offset() + pos_start_tag + len(start_tag))
-					line_content = self._current_doc.get_text(s,e)
-				elif (found_end_tag and not found_start_tag) or (found_start_tag and found_end_tag and pos_end_tag < pos_start_tag):
-					self._tag_list[self._current_doc][end_tag] = self._tag_list[self._current_doc][end_tag] + 1
-					s.set_line_offset(s.get_line_offset() + pos_end_tag + len(end_tag))
-					if self._tag_list[self._current_doc][end_tag] == self._tag_list[self._current_doc][start_tag]:
-						scan_current_line = False
-					line_content = self._current_doc.get_text(s,e)
-				else:
-					scan_current_line = False
-				
-				if self._tag_list[self._current_doc][end_tag] == self._tag_list[self._current_doc][start_tag]:
-					return s
-
-			has_next_line = start_iter.forward_line()
-		return None
 		
 	def highlight_selection(self):
 		selection = self._current_doc.get_selection_bounds()
