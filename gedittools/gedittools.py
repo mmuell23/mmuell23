@@ -28,10 +28,9 @@ class GeditToolsWindowHelper:
 		self._window = window
 		self._plugin = plugin
 		self._insert_menu()
-		self._highlighted_pairs = {}
+		self._highlighted_pairs = {} #pairs of highlighted iters
 		self._tag_list = {} #all applied tags by document 
 		self._tag_lib = {} #all tags to be assigned
-		self._active_tag_switch = 0
 
 	def deactivate(self):
 		self._remove_menu()
@@ -53,6 +52,7 @@ class GeditToolsWindowHelper:
 		self._action_group.set_sensitive(self._window.get_active_document() != None)
 		self._current_doc = self._window.get_active_document()
 
+		#initialize tags	
 		if self._current_doc and not self._tag_lib.has_key(self._current_doc):
 			self._tag_lib[self._current_doc] = []
 			self._tag_lib[self._current_doc].append(self._current_doc.create_tag('active_0', foreground="#000000", background="#CCDDFF"))
@@ -127,20 +127,19 @@ class GeditToolsWindowHelper:
 		if is_xml:
 			selected_text = self._current_doc.get_text(s, e)
 			selected_text = self.format_starttag(selected_text)
-			#s.set_line_offset(s.get_line_offset() + len(selected_text))
 			closing_tag_iter = self.move_to_end_tag(s.copy(), selected_text, level)
 
 			if closing_tag_iter:
-				#self.alert(selected_text + " auf Level " + str(level))
 				self._highlighted_pairs[self._current_doc].append([self._tag_lib[self._current_doc][level % len(self._tag_lib[self._current_doc])], s, closing_tag_iter])
 
+	#scan a line and count the tags
 	def move_to_end_tag(self, start_iter, start_tag, level):
 		end_tag = "</" + start_tag[1:] + ">"
 		self._tag_list[self._current_doc][start_tag] = 0
 		self._tag_list[self._current_doc][end_tag] = 0
 
-		has_next_line = True
-		is_first_line = True
+		has_next_line = True #Is there a current line?
+		is_first_line = True #Are we on the first line of the scanning process?
 		self._is_inline = False #Flag for inline commands
 		
 		while(has_next_line):
@@ -155,25 +154,27 @@ class GeditToolsWindowHelper:
 			#move to end of line
 			e.forward_to_line_end()
 
+			#little hack to jump over empty lines
 			if e.get_line() > s.get_line():
 				s.set_line(e.get_line())
 				s.set_line_offset(0)
-			
+
+			#scan for XML tags
 			line_content = s.get_text(e)
 			line_content = self._current_doc.get_text(s,e)
 			scan_current_line = True
 			reg_ex = "<[a-zA-Z0-9_]+"
-			#self.alert(reg_ex)
 
+			#iterate over all found tags
 			found_tags = re.findall(reg_ex, line_content)
 			another_tag = None
 			for found_tag in found_tags:
 				if found_tag != start_tag:
 					another_tag = found_tag
 					break
-			
-			#another_tag = re.search(reg_ex, line_content)
-			if another_tag: #hier noch beruecksichtigen, wenn gleiche tags verschachtelt sind. sollte ueber die anzahl gefundener tags gehen
+					
+			#another tag found in line? recursively call highlight_xml again
+			if another_tag: #TODO: also be aware of the same tag opening again in the same line!
 				pos_another_tag = string.find(line_content, another_tag) 
 				s1 = s.copy()
 				e1 = s1.copy()
@@ -190,21 +191,22 @@ class GeditToolsWindowHelper:
 					if self._tag_list[self._current_doc][start_tag] == 0:
 						s1 = s.copy() #position to conintue scanning from; also position behind "/>"
 						s1.set_offset(s.get_offset() + pos_closed_tag + 2)
+						#append this inline tag to the list of sections to be highlighted
 						self._highlighted_pairs[self._current_doc].append([self._tag_lib[self._current_doc][level % len(self._tag_lib[self._current_doc])], s, s1])
 						return s1
 					else:
+						#rest offset of s and continue scanning. Basically ignoring inline tags in this case...
 						s.set_offset(s.get_offset() + pos_closed_tag + 2)
 						line_content = self._current_doc.get_text(s,e)
-			
-				#oeffnet sich noch mal der starttag?
-				#wenn ja, passiert das vor dem endtag, wenn einer da ist?
+
+				#check for start_tag: does it open up again? if so, is there a closing tag before or after?
 				pos_start_tag = string.find(line_content, start_tag)
 				pos_end_tag   = string.find(line_content, end_tag)
 
 				found_start_tag = (pos_start_tag >= 0)
 				found_end_tag = (pos_end_tag >= 0)
 
-				#starttag, kein endtag oder starttag und endtag, aber starttag vor endtag
+				#there is a start-tag, but no end-tag or: there is a start-tag and an endtag, but the start-tag is before end-tag
 				if (found_start_tag and not found_end_tag) or (found_start_tag and found_end_tag and pos_start_tag < pos_end_tag):
 					self._tag_list[self._current_doc][start_tag] = self._tag_list[self._current_doc][start_tag] + 1
 					s.set_offset(s.get_offset() + pos_start_tag + len(start_tag))
@@ -217,10 +219,12 @@ class GeditToolsWindowHelper:
 					line_content = self._current_doc.get_text(s,e)
 				else:
 					scan_current_line = False
-				
+
+				#are there as many start- and end-tags? return the iter (which is now behind the last closed tag)
 				if self._tag_list[self._current_doc][end_tag] == self._tag_list[self._current_doc][start_tag]:
 					return s
 
+			#move on to the next line
 			has_next_line = start_iter.forward_line()
 		return None
 
@@ -245,9 +249,7 @@ class GeditToolsWindowHelper:
 		selected_text = self._current_doc.get_text(s, e)
 		return (selected_text.strip()[0] == "<")
 
-	def get_end_tag(self, start_tag):
-		return "</" + start_tag[1:] + ">"
-		
+	#highlight single words instead of xml trees
 	def highlight_selection(self):
 		selection = self._current_doc.get_selection_bounds()
 
