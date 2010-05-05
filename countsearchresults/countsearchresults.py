@@ -3,6 +3,7 @@ from gettext import gettext as _
 import gtk
 import gedit
 import re
+import string
 
 ui_str = """<ui>
 <menubar name="MenuBar">
@@ -59,9 +60,16 @@ class CountSearchResultsPluginWindowHelper:
 			return
 			
 		text = doc.get_text(doc.get_start_iter(), doc.get_end_iter())
-		count = re.findall(selection, text)
-
-		self.message_dialog(None, 0, "Occurances of " + selection + ": " + str(len(count)))
+		
+		counter = 0
+		pos = string.find(text, selection)
+		while(pos > 0):
+			counter = counter + 1
+			offset = pos + len(selection)
+			text = text[offset:]
+			pos = string.find(text, selection)
+			
+		self.alert("Occurances of " + selection + ": " + str(counter))
 
 	def get_selected_text(self, doc):
 		selection = doc.get_selection_bounds()
@@ -71,6 +79,9 @@ class CountSearchResultsPluginWindowHelper:
 			start, end = selection
 			return start.get_slice(end)
 		return ''
+
+	def alert(self, msg):
+		self.message_dialog(None, 0, msg)
 
 	def message_dialog(self, par, typ, msg):
 	        d = gtk.MessageDialog(par, gtk.DIALOG_MODAL, typ, gtk.BUTTONS_OK, msg)
