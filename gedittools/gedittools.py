@@ -6,6 +6,7 @@ import re
 import os
 import glib
 import string
+from ConfigParser import ConfigParser
 
 ui_str = """<ui>
 <menubar name="MenuBar">
@@ -31,6 +32,13 @@ class GeditToolsWindowHelper:
 		self._highlighted_pairs = {} #pairs of highlighted iters
 		self._tag_list = {} #all applied tags by document 
 		self._tag_lib = {} #all tags to be assigned
+		self.load_settings()
+		
+	def load_settings(self):
+		#read properties
+		properties = os.path.dirname( __file__ ) + "/gedittools.properties"
+		self.cfg = ConfigParser()
+		self.cfg.read(properties)	
 
 	def deactivate(self):
 		self._remove_menu()
@@ -76,7 +84,9 @@ class GeditToolsWindowHelper:
 				
 		self.timer = glib.timeout_add(500, self.general_timer)
 
-	def alert(self, message):
+	def alert(self, message):		
+		self._snapopen_glade = gtk.glade.XML( os.path.dirname( __file__ ) + "/geditttools.glade" )
+		self._snapopen_window = self._snapopen_glade.get_widget( "MeldLauncherWindow" )	
 		self.message_dialog(None, 0, message)
 		
 	#helper to show a message dialog
@@ -90,12 +100,12 @@ class GeditToolsWindowHelper:
 		window.hide()
 
 	#general timer. runs always
-	def general_timer(self):
+	def general_timer(self):        
 		xml_highlighted = False
-		if self._current_doc:
+		if self._current_doc and self.cfg.get("HighlightingOptions", "highlight xml tree") == "true":
 			xml_highlighted = self.start_highlighting()
 
-		if not xml_highlighted:
+		if not xml_highlighted and self.cfg.get("HighlightingOptions", "highlight selected word") == "true":
 			self.highlight_selection()
 
 	def start_highlighting(self):
@@ -275,3 +285,44 @@ class GeditTools(gedit.Plugin):
 
 	def update_ui(self, window):
 		self._instances[window].update_ui()
+
+	def save_properties(self, button):
+		cfg_file = open(os.path.dirname( __file__ ) + "/gedittools.properties", "w")
+		for option in self.options:
+			is_set = "false"
+			if option.get_active():
+				is_set = "true"
+			self.cfg.set("HighlightingOptions", option.get_label(), is_set)
+		self.cfg.write(cfg_file)
+		self._snapopen_window.hide()
+				
+	def create_configure_dialog(self):
+		self._snapopen_glade = gtk.glade.XML( os.path.dirname( __file__ ) + "/gedittools.glade" )
+		self._snapopen_window = self._snapopen_glade.get_widget( "GeditToolsWindow" )
+		self._snapopen_window.set_title("Configure gedittools")
+
+		#read properties
+		properties = os.path.dirname( __file__ ) + "/gedittools.properties"
+		self.cfg = ConfigParser()
+		self.cfg.read(properties)
+
+		container = self._snapopen_glade.get_widget("buttonbox")
+
+		#display properties
+		self.options = []
+		for option in self.cfg.options("HighlightingOptions"):
+			check_button = gtk.CheckButton(option, self.cfg.get("HighlightingOptions", option))
+			if self.cfg.get("HighlightingOptions", option) == "true":
+				check_button.set_active(True)
+			self.options.append(check_button)
+			container.pack_start(check_button, True, True, 0)
+
+		button = gtk.Button("Save settings")
+		button.connect("clicked", self.save_properties)
+		container.pack_start(button)
+		self._snapopen_window.show_all()
+		
+		#show configuration screen
+					
+		return self._snapopen_window	
+		
