@@ -8,6 +8,7 @@ import os
 import glib
 import string
 from ConfigParser import ConfigParser
+from countsearchresults import SearchResultCounter
 
 ui_str = """<ui>
 <menubar name="MenuBar">
@@ -34,6 +35,7 @@ class GeditToolsWindowHelper:
 		self._tag_list = {} #all applied tags by document 
 		self._tag_lib = {} #all tags to be assigned
 		self.load_settings()
+		self._counter = SearchResultCounter(self._window)
 		
 	def load_settings(self):
 		#read properties
@@ -108,6 +110,9 @@ class GeditToolsWindowHelper:
 
 		if not xml_highlighted and self.cfg.get("HighlightingOptions", "highlight selected word") == "true":
 			self.highlight_selection()
+
+		if self.cfg.get("HighlightingOptions", "count selection in document"):
+			self._counter.count_selection(self._current_doc)
 
 	def start_highlighting(self):
 		selection = self._current_doc.get_selection_bounds()
