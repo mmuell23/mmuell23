@@ -1,6 +1,0 @@
-To use this plugin...
-
-... copy all files to .gnome2/gedit/plugins
-... activate the plugin in the gedit settings
-... mark a word
-... hit "<ctrl><shift>f" to count occurances of the word.
