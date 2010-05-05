@@ -23,7 +23,7 @@ class CountSearchResultsPluginWindowHelper:
 	def __init__(self, plugin, window):
 		self._window = window
 		self._plugin = plugin
-
+		self._message_id = None #id of message in status bar
 		self._insert_menu()
 	def deactivate(self):
 		self._remove_menu()
@@ -68,9 +68,13 @@ class CountSearchResultsPluginWindowHelper:
 			offset = pos + len(selection)
 			text = text[offset:]
 			pos = string.find(text, selection)
-			
-		self.alert("Occurances of " + selection + ": " + str(counter))
 
+		statusbar = self._window.get_statusbar()
+		
+		context_id = statusbar.get_context_id("Searchcounter")
+		statusbar.pop(context_id)
+		message_id = statusbar.push(context_id, "Counted Elements: " + str(counter))
+		
 	def get_selected_text(self, doc):
 		selection = doc.get_selection_bounds()
 		current_pos_mark = doc.get_insert()
