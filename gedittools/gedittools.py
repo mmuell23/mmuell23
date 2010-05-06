@@ -156,7 +156,7 @@ class GeditToolsWindowHelper:
 				self._highlighted_pairs[self._current_doc].append([self._tag_lib[self._current_doc][level % len(self._tag_lib[self._current_doc])], s, closing_tag_iter])
 
 	#scan a line and count the tags
-	def move_to_end_tag(self, start_iter, start_taglaunch_meld, level):
+	def move_to_end_tag(self, start_iter, start_tag, level):
 		end_tag = "</" + start_tag[1:] + ">"
 		self._tag_list[self._current_doc][start_tag] = 0
 		self._tag_list[self._current_doc][end_tag] = 0
