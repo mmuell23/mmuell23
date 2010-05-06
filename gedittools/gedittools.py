@@ -9,6 +9,7 @@ import glib
 import string
 from ConfigParser import ConfigParser
 from countsearchresults import SearchResultCounter
+from meldlauncher import MeldLauncher
 
 ui_str = """<ui>
 <menubar name="MenuBar">
@@ -28,15 +29,17 @@ ui_str = """<ui>
 #plugin
 class GeditToolsWindowHelper:
 	def __init__(self, plugin, window):
+		self.load_settings()
 		self._window = window
 		self._plugin = plugin
 		self._insert_menu()
 		self._highlighted_pairs = {} #pairs of highlighted iters
 		self._tag_list = {} #all applied tags by document 
 		self._tag_lib = {} #all tags to be assigned
-		self.load_settings()
-		self._counter = SearchResultCounter(self._window)
 		
+		self._counter = SearchResultCounter(self._window)
+		self._meld_launcher = MeldLauncher(self._window)
+				
 	def load_settings(self):
 		#read properties
 		properties = os.path.dirname( __file__ ) + "/gedittools.properties"
@@ -50,8 +53,12 @@ class GeditToolsWindowHelper:
 		self._action_group = None
 		
 	def _insert_menu(self):
+		manager = self._window.get_ui_manager()
 		self._action_group = gtk.ActionGroup("GeditToolsGroup")
-		return True
+		if self.cfg.get("HighlightingOptions", "enable meld comparing") == "true":
+			self._action_group.add_actions([("GeditToolsAction", gtk.STOCK_COPY, _("Compare current file"), '<Control><Shift>c', _("Compare current file"), self.launch_meld)])
+		manager.insert_action_group(self._action_group, -1)
+		self._ui_id = manager.add_ui_from_string(ui_str)
 		
 	def _remove_menu(self):
 		manager = self._window.get_ui_manager()
@@ -88,8 +95,8 @@ class GeditToolsWindowHelper:
 		self.timer = glib.timeout_add(500, self.general_timer)
 
 	def alert(self, message):		
-		self._snapopen_glade = gtk.glade.XML( os.path.dirname( __file__ ) + "/geditttools.glade" )
-		self._snapopen_window = self._snapopen_glade.get_widget( "MeldLauncherWindow" )	
+		#self._snapopen_glade = gtk.glade.XML( os.path.dirname( __file__ ) + "/geditttools.glade" )
+		#self._snapopen_window = self._snapopen_glade.get_widget( "MeldLauncherWindow" )	
 		self.message_dialog(None, 0, message)
 		
 	#helper to show a message dialog
@@ -149,7 +156,7 @@ class GeditToolsWindowHelper:
 				self._highlighted_pairs[self._current_doc].append([self._tag_lib[self._current_doc][level % len(self._tag_lib[self._current_doc])], s, closing_tag_iter])
 
 	#scan a line and count the tags
-	def move_to_end_tag(self, start_iter, start_tag, level):
+	def move_to_end_tag(self, start_iter, start_taglaunch_meld, level):
 		end_tag = "</" + start_tag[1:] + ">"
 		self._tag_list[self._current_doc][start_tag] = 0
 		self._tag_list[self._current_doc][end_tag] = 0
@@ -242,7 +249,7 @@ class GeditToolsWindowHelper:
 
 			#move on to the next line
 			has_next_line = start_iter.forward_line()
-		return None
+		return None		
 
 	#format the starttag: to ignore all attributes, kick out the ">" if present
 	def format_starttag(self, tag):
@@ -275,6 +282,9 @@ class GeditToolsWindowHelper:
 			selected_text = self._current_doc.get_text(s, e)
 			self._current_doc.set_search_text(selected_text, 1)
 
+	#launch meld
+	def launch_meld(self, action):
+		self._meld_launcher.compare(self._current_doc)
 				
 class GeditTools(gedit.Plugin):
 
@@ -288,7 +298,7 @@ class GeditTools(gedit.Plugin):
 	def deactivate(self, window):
 		self._instances[window].deactivate()
 		del self._instances[window]
-
+		
 	def update_ui(self, window):
 		self._instances[window].update_ui()
 
