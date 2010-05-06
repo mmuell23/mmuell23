@@ -1,5 +1,18 @@
+The plug-in "gedittools" comes along with
+- XML Highlighting on double click
+- Highlighting of selected in whole document word on double click
+- Counting occurances of selection and showing results in statusbar
+- Launching "meld" as DIFF tool based on selection of opened documents
+
 To use this plug-in ...
-... install meld. On Ubuntu do this: sudo apt-get install meld
 ... copy all files to ~/.gnome2/gedit/plugins
 ... activate the plug-in in gedit settings
+... configure plug-in to select needed features
+... optionally install meld to make use of meld launcher. See below.
+
+To use meldlauncher, do this:
+... install meld. On Ubuntu do this: sudo apt-get install meld
 ... open 2 or more files and hit the new compare button in the toolbar.
+
+
+Have fun!
