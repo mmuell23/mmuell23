@@ -24,8 +24,6 @@ ui_str = """<ui>
 </toolbar>
 </ui>
 """
-
-
 #plugin
 class GeditToolsWindowHelper:
 	def __init__(self, plugin, window):

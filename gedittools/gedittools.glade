@@ -20,10 +20,21 @@
           </packing>
         </child>
         <child>
-          <widget class="GtkVBox" id="buttonlistbox">
+          <widget class="GtkVBox" id="mainbox">
             <property name="visible">True</property>
+		    <child>
+		      <widget class="GtkHBox" id="buttonbox">
+		        <property name="visible">True</property>
+		        <child>
+		          <placeholder/>
+		        </child>
+		      </widget>
+		      <packing>
+		        <property name="position">0</property>
+		      </packing>
+		    </child>              
             <child>
-              <widget class="GtkVButtonBox" id="buttonbox">
+              <widget class="GtkVButtonBox" id="mainelements">
                 <property name="visible">True</property>
                 <child>
                   <placeholder/>
