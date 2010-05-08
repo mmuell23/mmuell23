@@ -1,4 +1,14 @@
 These are just some nice and small gedit plug-ins.
-One is for counting search results, another for launching the compare tool meld based on documents opened in gedit.
+
+GEDITTOOLS:
+This is the major plugin. It comes along with 
+- XML Highlighting, 
+- Search Result Counting and 
+- A Launcher For Diff Compare Tool "Meld"
+- Automatic Selection Highlighting.
+See README in ./gedittools for further details
+
+SORTDOCUMENT:
+A small plugin to sort a document alphabetically. No major stuff :-)
 
 Have fun!
