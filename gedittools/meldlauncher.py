@@ -66,14 +66,14 @@ class MeldLauncher:
 		#iterate all opened files
 		filelist_group = self._snapopen_glade.get_widget("buttonbox")
 		for doc in gedit.app_get_default().get_documents():
-			if current_doc.get_short_name_for_display() != doc.get_short_name_for_display():
-				button = gtk.Button(self.get_filename(doc.get_uri_for_display()))
-				button.connect("clicked", self.button_callback)
-				
-				filelist_group.pack_start(button, True, True, 0)
+			button = gtk.Button(self.get_filename(doc.get_uri_for_display()))
+			button.set_tooltip_text(doc.get_uri()[7:])
+			button.connect("clicked", self.button_callback)
+			
+			filelist_group.pack_start(button, True, True, 0)
 
-				if doc != gedit.app_get_default().get_documents()[-1]:
-					filelist_group.pack_start(gtk.HSeparator(), True, True, 0)
+			if doc != gedit.app_get_default().get_documents()[-1]:
+				filelist_group.pack_start(gtk.HSeparator(), True, True, 0)
 
 		self._snapopen_window.show_all()
 		
