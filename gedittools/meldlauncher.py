@@ -53,7 +53,7 @@ class MeldLauncher:
 		labelbox = self._snapopen_glade.get_widget("labelbox")
 		label = gtk.Label()
 		label.set_use_markup(True)
-		label.set_markup("Compare <b>" + current_doc.get_short_name_for_display() + "</b> to:")
+		label.set_markup("Compare <b>" + current_doc.get_short_name_for_display() + "</b> to ...")
 		label.set_justify(gtk.JUSTIFY_LEFT)
 		label.set_padding(15,15)
 		
@@ -66,7 +66,7 @@ class MeldLauncher:
 		#iterate all opened files
 		filelist_group = self._snapopen_glade.get_widget("buttonbox")
 		for doc in gedit.app_get_default().get_documents():
-			button = gtk.Button(self.get_filename(doc.get_uri_for_display()))
+			button = gtk.Button(self.get_filename(doc.get_uri_for_display()), None, False)
 			button.set_tooltip_text(doc.get_uri()[7:])
 			button.connect("clicked", self.button_callback)
 			

@@ -54,7 +54,7 @@ class GeditToolsWindowHelper:
 		manager = self._window.get_ui_manager()
 		self._action_group = gtk.ActionGroup("GeditToolsGroup")
 		if self.cfg.get("HighlightingOptions", "enable meld comparing") == "true":
-			self._action_group.add_actions([("GeditToolsAction", gtk.STOCK_COPY, _("Compare current file"), '<Control><Shift>c', _("Compare current file"), self.launch_meld)])
+			self._action_group.add_actions([("GeditToolsAction", gtk.STOCK_COPY, _("Compare current file to ..."), '<Control><Shift>c', _("Compare current file to ..."), self.launch_meld)])
 		manager.insert_action_group(self._action_group, -1)
 		self._ui_id = manager.add_ui_from_string(ui_str)
 		
