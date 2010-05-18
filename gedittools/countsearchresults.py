@@ -22,18 +22,21 @@ ui_str = """<ui>
 class SearchResultCounter():
 	def __init__(self, window):
 		self._window = window
+		self._counter = 0
 		self._message_id = None #id of message in status bar
 		
 	def count_selection(self, doc):
 		if not doc:	
 			return
-			
+		
 		selection = self.get_selected_text(doc)
 
 		if len(selection) < 1:
 			return
 			
 		text = doc.get_text(doc.get_start_iter(), doc.get_end_iter())
+		text = unicode(text)
+		
 		
 		counter = 0
 		pos = string.find(text, selection)
@@ -44,7 +47,6 @@ class SearchResultCounter():
 			pos = string.find(text, selection)
 
 		statusbar = self._window.get_statusbar()
-		
 		context_id = statusbar.get_context_id("Searchcounter")
 		statusbar.pop(context_id)
 		message_id = statusbar.push(context_id, "Counted Elements: " + str(counter))

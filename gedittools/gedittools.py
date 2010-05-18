@@ -7,6 +7,7 @@ import re
 import os
 import glib
 import string
+import sys
 from ConfigParser import ConfigParser
 from countsearchresults import SearchResultCounter
 from meldlauncher import MeldLauncher
@@ -31,6 +32,7 @@ class GeditToolsWindowHelper:
 		self.load_settings()
 		self._window = window
 		self._plugin = plugin
+		self._active = False
 		self._insert_menu()
 		self._highlighted_pairs = {} #pairs of highlighted iters
 		self._tag_list = {} #all applied tags by document 
@@ -82,20 +84,34 @@ class GeditToolsWindowHelper:
 		d.run()
 		d.destroy()
 
+	#set statusbar
+	def update_statusbar(self, key, text):
+		statusbar = self._window.get_statusbar()
+		context_id = statusbar.get_context_id(key)
+		statusbar.pop(context_id)
+		message_id = statusbar.push(context_id, text)			
+
 	def close_window(self, window):
 		window.hide()
 
 	#general timer. runs always
-	def general_timer(self):        
-		xml_highlighted = False
-		if self._current_doc and self.cfg.get("HighlightingOptions", "highlight xml tree") == "true":
-			xml_highlighted = self._xml_highlighter.start_highlighting()
+	def general_timer(self):     
+		if not self._active: 
+			try:
+				self._active = True  
+				xml_highlighted = False
+				if self._current_doc and self.cfg.get("HighlightingOptions", "highlight xml tree") == "true":
+					xml_highlighted = self._xml_highlighter.start_highlighting()
 
-		if not xml_highlighted and self.cfg.get("HighlightingOptions", "highlight selected word") == "true":
-			self._xml_highlighter.highlight_selection()
+				if not xml_highlighted and self.cfg.get("HighlightingOptions", "highlight selected word") == "true":
+					self._xml_highlighter.highlight_selection()
 
-		if self.cfg.get("HighlightingOptions", "count selection in document"):
-			self._counter.count_selection(self._current_doc)
+				if self.cfg.get("HighlightingOptions", "count selection in document"):
+					self._counter.count_selection(self._current_doc)
+			except:
+				self.update_statusbar("error", "Unexpected error:" + str(sys.exc_info()[0])) 
+				
+			self._active = False
 
 	#launch meld
 	def launch_meld(self, action):
