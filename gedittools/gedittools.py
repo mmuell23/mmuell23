@@ -37,7 +37,7 @@ class GeditToolsWindowHelper:
 		self._highlighted_pairs = {} #pairs of highlighted iters
 		self._tag_list = {} #all applied tags by document 
 		self._tag_lib = {} #all tags to be assigned
-		self._xml_highlighter = XmlHighlighter(self._window)
+		self._xml_highlighter = XmlHighlighter(self._window, self)
 		
 		self._counter = SearchResultCounter(self._window)
 		self._meld_launcher = MeldLauncher(self._window)

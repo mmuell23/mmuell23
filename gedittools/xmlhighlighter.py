@@ -12,11 +12,12 @@ from countsearchresults import SearchResultCounter
 from meldlauncher import MeldLauncher
 
 class XmlHighlighter():
-	def __init__(self, window):
+	def __init__(self, window, opener):
 		self._window = window
 		self._highlighted_pairs = {} #pairs of highlighted iters
 		self._tag_list = {} #all applied tags by document 
 		self._tag_lib = {} #all tags to be assigned
+		self._opener = opener
 				
 	def update(self, doc):
 		self._current_doc = doc
@@ -52,10 +53,9 @@ class XmlHighlighter():
 			self._highlighted_pairs[self._current_doc].reverse()
 			
 			for triple in self._highlighted_pairs[self._current_doc]:
-				#self.alert("Highlighte Text:" + self._current_doc.get_text(triple[1], triple[2]))
 				for remove_tag in self._tag_lib[self._current_doc]:
 					self._current_doc.remove_tag(remove_tag, triple[1], triple[2])
-				self._current_doc.apply_tag(triple[0], triple[1], triple[2])				
+				self._current_doc.apply_tag(triple[0], triple[1], triple[2])	
 				was_xml = True
 		return was_xml
 				
@@ -152,16 +152,20 @@ class XmlHighlighter():
 					line_content = self._current_doc.get_text(s,e)
 				elif (found_end_tag and not found_start_tag) or (found_start_tag and found_end_tag and pos_end_tag < pos_start_tag):
 					self._tag_list[self._current_doc][end_tag] = self._tag_list[self._current_doc][end_tag] + 1
-					s.set_offset(s.get_offset() + pos_end_tag + len(end_tag))
 					if self._tag_list[self._current_doc][end_tag] == self._tag_list[self._current_doc][start_tag]:
 						scan_current_line = False
+					s.set_offset(s.get_offset() + pos_end_tag + len(end_tag))
 					line_content = self._current_doc.get_text(s,e)
+
 				else:
 					scan_current_line = False
 
 				#are there as many start- and end-tags? return the iter (which is now behind the last closed tag)
 				if self._tag_list[self._current_doc][end_tag] == self._tag_list[self._current_doc][start_tag]:
-					return s
+					if s.get_offset() > e.get_offset():
+						return e
+					else:
+						return s
 
 			#move on to the next line
 			has_next_line = start_iter.forward_line()
