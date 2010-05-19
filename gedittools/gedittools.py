@@ -12,6 +12,7 @@ from ConfigParser import ConfigParser
 from countsearchresults import SearchResultCounter
 from meldlauncher import MeldLauncher
 from xmlhighlighter import XmlHighlighter
+from xmlprocessor import XslProcessor
 
 ui_str = """<ui>
 <menubar name="MenuBar">
@@ -23,6 +24,7 @@ ui_str = """<ui>
 </menubar>
 <toolbar name="ToolBar">
 <placeholder name="Tool_Opt4"><toolitem name="GeditToolsAction" action="GeditToolsAction"/></placeholder>
+<placeholder name="Tool_Opt4"><toolitem name="GeditToolsTransformXMLAction" action="GeditToolsTransformXMLAction"/></placeholder>
 </toolbar>
 </ui>
 """
@@ -38,7 +40,7 @@ class GeditToolsWindowHelper:
 		self._tag_list = {} #all applied tags by document 
 		self._tag_lib = {} #all tags to be assigned
 		self._xml_highlighter = XmlHighlighter(self._window, self)
-		
+		self._xsl_processor = XslProcessor(self._window, self)
 		self._counter = SearchResultCounter(self._window)
 		self._meld_launcher = MeldLauncher(self._window)
 				
@@ -59,6 +61,10 @@ class GeditToolsWindowHelper:
 		self._action_group = gtk.ActionGroup("GeditToolsGroup")
 		if self.cfg.get("HighlightingOptions", "enable meld comparing") == "true":
 			self._action_group.add_actions([("GeditToolsAction", gtk.STOCK_COPY, _("Compare current file to ..."), '<Control><Shift>c', _("Compare current file to ..."), self.launch_meld)])
+		
+		if self.cfg.get("HighlightingOptions", "enable xml transformator") == "true":
+			self._action_group.add_actions([("GeditToolsTransformXMLAction", gtk.STOCK_REFRESH, _("Transform XML file ..."), '<Control><Shift>x', _("Transform XML file ..."), self.transform_xml)])
+
 		manager.insert_action_group(self._action_group, -1)
 		self._ui_id = manager.add_ui_from_string(ui_str)
 		
@@ -116,7 +122,10 @@ class GeditToolsWindowHelper:
 	#launch meld
 	def launch_meld(self, action):
 		self._meld_launcher.compare(self._current_doc)
-				
+	
+	def transform_xml(self, action):
+		self.alert("Not implemented")			
+		
 class GeditTools(gedit.Plugin):
 
 	def __init__(self):
