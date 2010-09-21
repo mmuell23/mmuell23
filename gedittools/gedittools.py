@@ -13,6 +13,7 @@ from countsearchresults import SearchResultCounter
 from meldlauncher import MeldLauncher
 from xmlhighlighter import XmlHighlighter
 from xmlprocessor import XslProcessor
+import traceback
 
 ui_str = """<ui>
 <menubar name="MenuBar">
@@ -25,6 +26,7 @@ ui_str = """<ui>
 <toolbar name="ToolBar">
 <placeholder name="Tool_Opt4"><toolitem name="GeditToolsAction" action="GeditToolsAction"/></placeholder>
 <placeholder name="Tool_Opt4"><toolitem name="GeditToolsTransformXMLAction" action="GeditToolsTransformXMLAction"/></placeholder>
+<placeholder name="Tool_Opt4"><toolitem name="GeditToolsHighlightXMLAction" action="GeditToolsHighlightXMLAction"/></placeholder>
 </toolbar>
 </ui>
 """
@@ -64,6 +66,8 @@ class GeditToolsWindowHelper:
 		
 		if self.cfg.get("HighlightingOptions", "enable xml transformator") == "true":
 			self._action_group.add_actions([("GeditToolsTransformXMLAction", gtk.STOCK_REFRESH, _("Transform XML file ..."), '<Control><Shift>x', _("Transform XML file ..."), self.transform_xml)])
+		if self.cfg.get("HighlightingOptions", "highlight xml tree") == "true":
+			self._action_group.add_actions([("GeditToolsHighlightXMLAction", gtk.STOCK_SELECT_COLOR, _("Highlight XML in file ..."), '<Control><Shift>h', _("Highlight XML in file ..."), self.highlight_xml)])
 
 		manager.insert_action_group(self._action_group, -1)
 		self._ui_id = manager.add_ui_from_string(ui_str)
@@ -105,11 +109,7 @@ class GeditToolsWindowHelper:
 		if not self._active: 
 			try:
 				self._active = True  
-				xml_highlighted = False
-				if self._current_doc and self.cfg.get("HighlightingOptions", "highlight xml tree") == "true":
-					xml_highlighted = self._xml_highlighter.start_highlighting()
-
-				if not xml_highlighted and self.cfg.get("HighlightingOptions", "highlight selected word") == "true":
+				if self.cfg.get("HighlightingOptions", "highlight selected word") == "true":
 					self._xml_highlighter.highlight_selection()
 
 				if self.cfg.get("HighlightingOptions", "count selection in document"):
@@ -122,6 +122,9 @@ class GeditToolsWindowHelper:
 	#launch meld
 	def launch_meld(self, action):
 		self._meld_launcher.compare(self._current_doc)
+	
+	def highlight_xml(self, action):
+		xml_highlighted = self._xml_highlighter.start_highlighting()
 	
 	def transform_xml(self, action):
 		self.alert("Not implemented")			
