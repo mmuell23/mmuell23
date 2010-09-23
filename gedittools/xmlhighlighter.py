@@ -122,9 +122,11 @@ class XmlHighlighter():
 	#get a list of all tags in the document
 	def get_tags_to_highlight(self, text):
 	
-		#schaue nach positionen von tag
+		#search all opening and closing tags
 		it = re.finditer(r"<(/)?([a-zA-Z0-9_\-:]+)((\s)*[A-Za-z:0-9]+\=\"[_\-a-zA-Z0-9\s:\.]*\")*(/)?>", text, re.I)
-		tags = [] #liste aller tags
+		tags = [] 
+		
+		#iterate over tags and decide what to do
 		for m in it: 
 
 			complete_tag = m.group(0)
@@ -132,23 +134,26 @@ class XmlHighlighter():
 			is_end_tag = False
 			is_inline_tag = False
 			
+			#closing tag
 			if tag_word[0:2] == "</":
 				is_end_tag = True
 				tag_word = complete_tag[2:string.find(complete_tag, " ")]
+			#opening tag
 			else:
 				tag_word = complete_tag[1:string.find(complete_tag, " ")]
 		
+			#inline tag
 			if complete_tag[-2:] == "/>":
 				is_inline_tag = True
 				
-			#oeffnenend tag in jedem fall anhaengen
-			if m.group(0)[0:2] != "</":
+			#in any case: append opening and inline tag to list of tags
+			if not is_end_tag:
 				tag = Tag(tag_word, m.span()[0])
 				tag.set_complete_tag(complete_tag)
 				if is_inline_tag:
 					tag.set_end(m.span()[1]) 
 				tags.append(tag)
-			#bei schliessendem liste von hinten durchgehen und erstes offenes start_tag schliessen
+			#is closing tag? look for last added corresponding opening tag and update its end position
 			else:
 				tags.reverse()
 				for tag in tags:
