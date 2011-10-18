@@ -1,14 +1,15 @@
 from gettext import gettext as _
 
-import gtk, gtk.glade
+#import gtk, gtk.glade
 from gedittools_configure import GeditToolsConfiguration
-import gedit
+#import gedit
+from gi.repository import GObject, Gedit
 import re
 import os
 import glib
 import string
 from ConfigParser import ConfigParser
-from countsearchresults import SearchResultCounter
+from countsearchresults import SearchResultCounterPlugin
 from meldlauncher import MeldLauncher
 
 class Tag():
@@ -90,7 +91,7 @@ class XmlHighlighter():
 		self._highlighted_pairs[self._current_doc] = []	
 		
 		#read text
-		text = self._current_doc.get_text(self._current_doc.get_start_iter(), self._current_doc.get_end_iter())
+		text = self._current_doc.get_text(self._current_doc.get_start_iter(), self._current_doc.get_end_iter(), True)
 		text = unicode(text)
 		
 		#get tags
@@ -116,7 +117,7 @@ class XmlHighlighter():
 		if selection:
 			self._current_doc.set_enable_search_highlighting(True)
 			s,e = selection
-			selected_text = self._current_doc.get_text(s, e)
+			selected_text = self._current_doc.get_text(s, e, True)
 			self._current_doc.set_search_text(selected_text, 1)		
 		
 	#get a list of all tags in the document

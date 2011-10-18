@@ -1,15 +1,14 @@
-from gettext import gettext as _
+from gi.repository import GObject, Gedit, Gtk
+from gi.repository import PeasGtk
 
-import gtk, gtk.glade
 from gedittools_configure import GeditToolsConfiguration
-import gedit
 import re
 import os
 import glib
 import string
 import sys
 from ConfigParser import ConfigParser
-from countsearchresults import SearchResultCounter
+from countsearchresults import SearchResultCounterPlugin
 from meldlauncher import MeldLauncher
 from xmlhighlighter import XmlHighlighter
 from xmlprocessor import XslProcessor
@@ -30,7 +29,7 @@ ui_str = """<ui>
 </toolbar>
 </ui>
 """
-#plugin
+
 class GeditToolsWindowHelper:
 	def __init__(self, plugin, window):
 		self.load_settings()
@@ -43,7 +42,7 @@ class GeditToolsWindowHelper:
 		self._tag_lib = {} #all tags to be assigned
 		self._xml_highlighter = XmlHighlighter(self._window, self)
 		self._xsl_processor = XslProcessor(self._window, self)
-		self._counter = SearchResultCounter(self._window)
+		self._counter = SearchResultCounterPlugin(self._window)
 		self._meld_launcher = MeldLauncher(self._window)
 				
 	def load_settings(self):
@@ -60,14 +59,14 @@ class GeditToolsWindowHelper:
 		
 	def _insert_menu(self):
 		manager = self._window.get_ui_manager()
-		self._action_group = gtk.ActionGroup("GeditToolsGroup")
+		self._action_group = Gtk.ActionGroup("GeditToolsGroup")
 		if self.cfg.get("HighlightingOptions", "enable meld comparing") == "true":
-			self._action_group.add_actions([("GeditToolsAction", gtk.STOCK_COPY, _("Compare current file to ..."), '<Control><Shift>c', _("Compare current file to ..."), self.launch_meld)])
+			self._action_group.add_actions([("GeditToolsAction", Gtk.STOCK_COPY, _("Compare current file to ..."), '<Control><Shift>c', _("Compare current file to ..."), self.launch_meld)])
 		
 		if self.cfg.get("HighlightingOptions", "enable xml transformator") == "true":
-			self._action_group.add_actions([("GeditToolsTransformXMLAction", gtk.STOCK_REFRESH, _("Transform XML file ..."), '<Control><Shift>x', _("Transform XML file ..."), self.transform_xml)])
+			self._action_group.add_actions([("GeditToolsTransformXMLAction", Gtk.STOCK_REFRESH, _("Transform XML file ..."), '<Control><Shift>x', _("Transform XML file ..."), self.transform_xml)])
 		if self.cfg.get("HighlightingOptions", "highlight xml tree") == "true":
-			self._action_group.add_actions([("GeditToolsHighlightXMLAction", gtk.STOCK_SELECT_COLOR, _("Highlight XML in file ..."), '<Control><Shift>h', _("Highlight XML in file ..."), self.highlight_xml)])
+			self._action_group.add_actions([("GeditToolsHighlightXMLAction", Gtk.STOCK_SELECT_COLOR, _("Highlight XML in file ..."), '<Control><Shift>h', _("Highlight XML in file ..."), self.highlight_xml)])
 
 		manager.insert_action_group(self._action_group, -1)
 		self._ui_id = manager.add_ui_from_string(ui_str)
@@ -82,14 +81,14 @@ class GeditToolsWindowHelper:
 		self._action_group.set_sensitive(self._window.get_active_document() != None)
 		self._current_doc = self._window.get_active_document()
 		self._xml_highlighter.update(self._current_doc)
-		self.timer = glib.timeout_add(500, self.general_timer)
+		self.timer = GObject.timeout_add(500, self.general_timer)
 
 	def alert(self, message):		
 		self.message_dialog(None, 0, message)
 		
 	#helper to show a message dialog
 	def message_dialog(self, par, typ, msg):
-		d = gtk.MessageDialog(par, gtk.DIALOG_MODAL, typ, gtk.BUTTONS_OK, msg)
+		d = Gtk.MessageDialog(par, Gtk.DIALOG_MODAL, typ, Gtk.BUTTONS_OK, msg)
 		d.set_property('use-markup', False)
 		d.run()
 		d.destroy()
@@ -115,6 +114,7 @@ class GeditToolsWindowHelper:
 				if self.cfg.get("HighlightingOptions", "count selection in document"):
 					self._counter.count_selection(self._current_doc)
 			except:
+				print str(sys.exc_info()[0])
 				self.update_statusbar("error", "Unexpected error:" + str(sys.exc_info()[0])) 
 				
 			self._active = False
@@ -127,25 +127,30 @@ class GeditToolsWindowHelper:
 		xml_highlighted = self._xml_highlighter.start_highlighting()
 	
 	def transform_xml(self, action):
-		self.alert("Not implemented")			
-		
-class GeditTools(gedit.Plugin):
+		self.alert("Not implemented")	
 
-	def __init__(self):
-		gedit.Plugin.__init__(self)
-		self._instances = {}
-
-	def activate(self, window):
-		self._instances[window] = GeditToolsWindowHelper(self, window)
+class GeditToolsPlugin(GObject.Object, Gedit.WindowActivatable, PeasGtk.Configurable):
+    __gtype_name__ = "GeditToolsPlugin"
+    window = GObject.property(type=Gedit.Window)
 	
-	def deactivate(self, window):
-		self._instances[window].deactivate()
-		del self._instances[window]
-		
-	def update_ui(self, window):
-		self._instances[window].update_ui()
+    def __init__(self):
+        GObject.Object.__init__(self)
+        self._instances = {}
 
-	def create_configure_dialog(self):
-		config = GeditToolsConfiguration()
-		return config.create_configuration_window()
+    def do_activate(self):
+        self._instances[self.window] = GeditToolsWindowHelper(self, self.window)
+        pass
+    
+    def do_deactivate(self):
+        self._instances[self.window].deactivate()
+        del self._instances[self.window]
+        pass
+        
+    def do_update_state(self):
+        self._instances[self.window].update_ui()
+        pass
+    
+    def do_create_configure_widget(self):
+    	config = GeditToolsConfiguration()
+        return config.create_configuration_window()
 		

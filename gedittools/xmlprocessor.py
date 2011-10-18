@@ -1,5 +1,6 @@
-import gtk, gtk.glade
-import gedit
+#import gtk, gtk.glade
+from gi.repository import GObject, Gedit
+#import gedit
 import re
 import os
 

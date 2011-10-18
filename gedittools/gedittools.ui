@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<interface>
+  <!-- interface-requires gtk+ 2.16 -->
+  <!-- interface-naming-policy project-wide -->
+  <object class="GtkWindow" id="GeditToolsWindow">
+    <property name="modal">True</property>
+    <property name="default_width">400</property>
+    <child>
+      <object class="GtkVBox" id="topbox">
+        <property name="visible">True</property>
+        <child>
+          <object class="GtkHBox" id="labelbox">
+            <property name="visible">True</property>
+            <child>
+              <placeholder/>
+            </child>
+          </object>
+          <packing>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkVBox" id="mainbox">
+            <property name="visible">True</property>
+            <child>
+              <object class="GtkHBox" id="buttonbox">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkVButtonBox" id="mainelements">
+                <property name="visible">True</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="position">0</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
