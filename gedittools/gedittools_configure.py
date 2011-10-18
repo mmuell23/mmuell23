@@ -25,14 +25,11 @@ class GeditToolsConfiguration():
         #display properties
         self.options = []
         for option in self.cfg.options("HighlightingOptions"):
-            #option = option[0].swapcase() + option[1:]
-            print option
             check_button = Gtk.CheckButton(option[0].swapcase() + option[1:])
             if self.cfg.get("HighlightingOptions", option) == "true":
                 check_button.set_active(True)
             self.options.append(check_button)
             container.pack_start(check_button, True, True, 0)
-
 
         #display buttons
         container = self.builder.get_object("buttonbox")

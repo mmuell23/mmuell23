@@ -1,6 +1,4 @@
 from gettext import gettext as _
-
-#import gtk
 from gi.repository import GObject, Gedit, Gtk
 import re
 import string
@@ -21,18 +19,14 @@ ui_str = """<ui>
 </ui>
 """
 
-class SearchResultCounterPlugin():#(GObject.Object, Gedit.WindowActivatable):
+class SearchResultCounterPlugin():
     __gtype_name__ = "SearchResultCounterPlugin"
-    #window = GObject.property(type=Gedit.Window)
-    
-    #def __init__(self):
+
     def __init__(self, w):
         self._counter = 0
         self._active = False
         self._message_id = None #id of message in status bar
         self.window = w
-        #self.timer = GObject.timeout_add(500, self.general_timer)
-        #print "timer gestartet"
         
     def do_activate(self):
         pass
@@ -80,17 +74,6 @@ class SearchResultCounterPlugin():#(GObject.Object, Gedit.WindowActivatable):
         statusbar.pop(context_id)
         message_id = statusbar.push(context_id, "Counted Elements: " + str(counter))
        
-    #general timer. runs always
-    def general_timer(self):     
-        if not self._active: 
-            try:
-                self._active = True  
-                self.count_selection(self._current_doc)
-            except:
-                print str(sys.exc_info()[0])
-                self.window.get_statusbar.update_statusbar("error", "Unexpected error:" + str(sys.exc_info()[0])) 
-            self._active = False       
-        
     def get_selected_text(self, doc):
         selection = doc.get_selection_bounds()
         current_pos_mark = doc.get_insert()
