@@ -46,7 +46,7 @@ class SearchResultCounterPlugin():
         if selection:
             self._current_doc.set_enable_search_highlighting(True)
             s,e = selection
-            selected_text = self._current_doc.get_text(s, e, True)
+            selected_text = self._current_doc.get_text(s, e, False)
             self._current_doc.set_search_text(selected_text, 1)            
         
     def count_selection(self, doc):
@@ -58,8 +58,8 @@ class SearchResultCounterPlugin():
         if len(selection) < 1:
             return
             
-        text = doc.get_text(doc.get_start_iter(), doc.get_end_iter(), True)
-        text = unicode(text)
+        text = doc.get_text(doc.get_start_iter(), doc.get_end_iter(), False)
+        #text = unicode(text)
         
         counter = 0
         pos = string.find(text, selection)

@@ -91,7 +91,7 @@ class XmlHighlighter():
 		self._highlighted_pairs[self._current_doc] = []	
 		
 		#read text
-		text = self._current_doc.get_text(self._current_doc.get_start_iter(), self._current_doc.get_end_iter(), True)
+		text = self._current_doc.get_text(self._current_doc.get_start_iter(), self._current_doc.get_end_iter(), False)
 		text = unicode(text)
 		
 		#get tags
@@ -117,7 +117,7 @@ class XmlHighlighter():
 		if selection:
 			self._current_doc.set_enable_search_highlighting(True)
 			s,e = selection
-			selected_text = self._current_doc.get_text(s, e, True)
+			selected_text = self._current_doc.get_text(s, e, False)
 			self._current_doc.set_search_text(selected_text, 1)		
 		
 	#get a list of all tags in the document
